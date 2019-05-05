@@ -1,0 +1,8 @@
+node_modules
+*.js
+.idea/
+.vscode/
+node_modules/
+build/
+tmp/
+temp/
