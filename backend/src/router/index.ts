@@ -4,5 +4,5 @@ const Router = require('koa-router')
 
 export const indexRouter = new Router();
 
-indexRouter.use('/admin', adminRouter.routes(), adminRouter.allowedMethods());
-indexRouter.use('/common', commonRouter.routes(), commonRouter.allowedMethods());
+indexRouter.use('/api/admin', adminRouter.routes(), adminRouter.allowedMethods());
+indexRouter.use('/api/common', commonRouter.routes(), commonRouter.allowedMethods());

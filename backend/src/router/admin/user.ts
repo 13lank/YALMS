@@ -1,6 +1,9 @@
 import { User } from "../../entity/User";
 import { createConnection, getConnection } from "typeorm";
 import { sha512, genSalt } from "../../utils";
+import { Book } from "../../entity/Book";
+import { resolve } from "path";
+import { Record } from "../../entity/Record";
 const Router = require('koa-router')
 export const userRouter = new Router()
 
@@ -54,3 +57,29 @@ userRouter.post('/delete', async (ctx) => {
     ctx.body = { 'status': false, 'info': err };
   }
 });
+
+userRouter.get('/search', async (ctx) => {
+  try {
+    var params = ctx.query;
+    var qstr = "";
+    for (var key in params)
+      qstr += "`" + key + "` LIKE \'%" + params[key] + "%\' AND ";
+    if (qstr.length > 3) qstr = qstr.slice(0, -4);
+    console.log(qstr);
+    const userres = await getConnection().getRepository(User)
+      .createQueryBuilder('User').where(qstr).getMany();
+    var res = [];
+    for (var user of userres) {
+      res.push({
+        CardId: user.CardId,
+        Name: user.Name,
+        Dept: user.Dept
+      })
+    }
+    ctx.body = { 'status': true, 'res': res };
+  }
+  catch (err) {
+    console.log("Deletion Failed! ", err);
+    ctx.body = { 'status': false, 'info': err };
+  }
+})

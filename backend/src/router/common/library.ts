@@ -4,10 +4,11 @@ import { getConnection } from "typeorm";
 import { User } from "../../entity/User";
 import { Record } from "../../entity/Record";
 import { createSecureContext } from "tls";
+import { SqlInMemory } from "typeorm/driver/SqlInMemory";
 
 const Router = require('koa-router');
-export const bookRouter = new Router();
-bookRouter.get('/allbooks', async (ctx) => {
+export const libraryRouter = new Router();
+libraryRouter.get('/allbooks', async (ctx) => {
   console.log("Querying all book info...");
   try {
     let bookRepository = getConnection().getRepository(Book);
@@ -20,9 +21,9 @@ bookRouter.get('/allbooks', async (ctx) => {
     ctx.body = { 'status': false, 'info': err };
   }
 });
-bookRouter.get('/searchdetail', async (ctx) => {
+libraryRouter.get('/searchdetail', async (ctx) => {
   try {
-    var params = ctx.request.body;
+    var params = ctx.query;
     const qry = getConnection().getRepository(Book).createQueryBuilder("book");
     var qstr = "";
     for (var key in params)
@@ -38,8 +39,8 @@ bookRouter.get('/searchdetail', async (ctx) => {
     ctx.body = { 'status': false, 'info': err };
   }
 });
-bookRouter.get('/searchfuzzy', async (ctx) => {
-  var keyword = ctx.request.body.keyword;
+libraryRouter.get('/searchfuzzy', async (ctx) => {
+  var keyword = ctx.query.keyword;
   console.log("Searching books by keyword: ", keyword);
   try {
     const res = await getConnection()
@@ -56,7 +57,7 @@ bookRouter.get('/searchfuzzy', async (ctx) => {
   }
 });
 
-bookRouter.post('/borrow', async (ctx) => {
+libraryRouter.post('/borrow', async (ctx) => {
   var BookNo = ctx.request.body.BookNo;
   console.log("Borrowing Book, BookNo:", BookNo);
   try {
@@ -88,7 +89,7 @@ bookRouter.post('/borrow', async (ctx) => {
     ctx.body = { 'status': false, 'info': err };
   }
 });
-bookRouter.post('/return', async ctx => {
+libraryRouter.post('/return', async ctx => {
   console.log("Returning book");
   let data = ctx.request.body;
   try {
@@ -110,7 +111,7 @@ bookRouter.post('/return', async ctx => {
   }
 });
 
-bookRouter.get('/book_rent_status', async ctx => {
+libraryRouter.get('/book_rent_status', async ctx => {
   console.log("Getting user rent status...");
   let data = ctx.request.body;
   try {
@@ -128,7 +129,7 @@ bookRouter.get('/book_rent_status', async ctx => {
   }
 });
 
-bookRouter.get('/user_rent_status', async ctx => {
+libraryRouter.get('/user_rent_status', async ctx => {
   console.log("Getting user rent status...");
   try {
     const recordRepo = getConnection().getRepository(Record);
@@ -142,3 +143,70 @@ bookRouter.get('/user_rent_status', async ctx => {
     ctx.body = { 'status': false, 'info': error };
   }
 });
+
+libraryRouter.get('/top_users', async ctx => {
+  console.log("Getting popular books...");
+  try {
+    const res = await getConnection().query("select  `user`.Name,`user`.Dept,`user`.CardId,a.Borrows \
+                                          from `user`,(select userCardId, COUNT(*)as Borrows \
+                                                      from `record` \
+                                                      GROUP BY userCardId) as a \
+                                          where (`user`.CardId = a.userCardId) \
+                                          order by Borrows desc \
+                                          limit 0,10");
+    ctx.body = { 'status': true, 'res': res };
+  } catch (error) {
+    console.log("Failed to query! ", error);
+    ctx.body = { 'status': false, 'info': error };
+  }
+})
+
+libraryRouter.get('/top_books', async ctx => {
+  console.log("Getting popular books...");
+  try {
+    const res = await getConnection().query("select BookNo,BookName,BookType,Author,Publisher,Price,Borrows \
+                                          from `book`,(select bookBookNo, COUNT(*) as Borrows \
+                                                      from `record` \
+                                                      GROUP BY bookBookNo) as a \
+                                          where (`book`.BookNo = a.bookBookNo) \
+                                          order by Borrows desc \
+                                          limit 0,10");
+    ctx.body = { 'status': true, 'res': res };
+  } catch (error) {
+    console.log("Failed to query! ", error);
+    ctx.body = { 'status': false, 'info': error };
+  }
+})
+
+libraryRouter.get('/total_users', async ctx => {
+  console.log("Getting total users ...");
+  try {
+    const res = await getConnection().getRepository(User).count();
+    ctx.body = { 'status': true, 'res': res };
+  } catch (error) {
+    console.log("Failed to query! ", error);
+    ctx.body = { 'status': false, 'info': error };
+  }
+})
+
+libraryRouter.get('/total_borrows', async ctx => {
+  console.log("Getting total borrows ...");
+  try {
+    const res = await getConnection().getRepository(Record).count();
+    ctx.body = { 'status': true, 'res': res };
+  } catch (error) {
+    console.log("Failed to query! ", error);
+    ctx.body = { 'status': false, 'info': error };
+  }
+})
+
+libraryRouter.get('/total_books', async ctx => {
+  console.log("Getting total books ...");
+  try {
+    const res = await getConnection().query("select sum(Total) as total from Book");
+    ctx.body = { 'status': true, 'res': res[0].total };
+  } catch (error) {
+    console.log("Failed to query! ", error);
+    ctx.body = { 'status': false, 'info': error };
+  }
+})
