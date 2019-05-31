@@ -44,8 +44,19 @@
           <v-flex xs12>
             <material-card>
               <v-layout wrap>
+                <input
+                  type="file"
+                  style="display: none"
+                  ref="file_input"
+                  accept=".csv"
+                  @change="onFilePicked"
+                >
                 <v-flex xs12 text-xs-center>
-                  <v-btn class="mx-0 font-weight-light" color="error">Add Books From File</v-btn>
+                  <v-btn
+                    class="mx-0 font-weight-light"
+                    color="error"
+                    @click="pickFile"
+                  >Add Books From File</v-btn>
                 </v-flex>
               </v-layout>
             </material-card>
@@ -121,6 +132,7 @@
 </template>
 <script>
 import VueResource from "vue-resource";
+import Papa from "papaparse";
 export default {
   data() {
     return {
@@ -165,7 +177,10 @@ export default {
           }
         ],
         items: []
-      }
+      },
+      csvName: "",
+      csvFile: "",
+      csvUrl: ""
     };
   },
   methods: {
@@ -230,6 +245,51 @@ export default {
         .catch(err => {
           alert("Network Error: " + err);
         });
+    },
+    pickFile: function() {
+      this.$refs.file_input.click();
+    },
+    onFilePicked(e) {
+      const files = e.target.files;
+      if (files[0] !== undefined) {
+        this.csvName = files[0].name;
+        if (this.csvName.lastIndexOf(".") <= 0) {
+          return;
+        }
+        const fr = new FileReader();
+        fr.readAsDataURL(files[0]);
+        fr.addEventListener("load", () => {
+          this.csvUrl = fr.result;
+          this.csvFile = files[0]; // this is an csv file that can be sent to server...
+          Papa.parse(this.csvFile, {
+            complete: res => {
+              var data = res.data;
+              var books = [];
+              for (var i = 1, len = data.length - 1; i <= len; i++) {
+                var item = {};
+                if (data[i].length === 1) continue;
+                for (var j = 0, alen = data[i].length; j < alen; j++)
+                  item[data[0][j]] = data[i][j];
+                books.push(item);
+              }
+              this.$http
+                .post("/api/admin/book/addbooks", books, {
+                  emulateJSON: true
+                })
+                .then(res => {
+                  alert(res.data.info);
+                })
+                .catch(err => {
+                  alert("Network Error: " + err);
+                });
+            }
+          });
+        });
+      } else {
+        this.csvName = "";
+        this.csvFile = "";
+        this.csvUrl = "";
+      }
     }
   }
 };

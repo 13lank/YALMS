@@ -13,9 +13,9 @@ bookRouter.post('/addbooks', async (ctx) => {
       book.Storage = item['Total'];
       book.Records = [];
       await getConnection().manager.save(book);
-      ctx.body = { 'status': true, 'info': "Book Added! BookNo:" + book.BookNo };
-      console.log("Book Added! BookNo:", book.BookNo);
     }
+    ctx.body = { 'status': true, 'info': data.length + "Books Added!" };
+    console.log(data.length + "Books Added!");
   }
   catch (err) {
     console.log("Failed to add book:", err);
