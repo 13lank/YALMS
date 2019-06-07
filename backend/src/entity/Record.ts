@@ -17,10 +17,10 @@ export class Record {
   @Column("boolean")
   Returned: boolean;
 
-  @ManyToOne(type => User, User => User.Records)
+  @ManyToOne(type => User, User => User.Records, { onDelete: 'CASCADE' })
   User: User;
 
-  @ManyToOne(type => Book, Book => Book.Records)
+  @ManyToOne(type => Book, Book => Book.Records, { onDelete: 'CASCADE' })
   Book: Book;
 
 }

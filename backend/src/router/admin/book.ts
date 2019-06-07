@@ -7,14 +7,16 @@ bookRouter.post('/addbooks', async (ctx) => {
   const data = ctx.request.body;
   console.log("Adding books to the library:", data);
   try {
+    let books = []
     for (var item of data) {
       let book = new Book();
       for (var keys in item) book[keys] = item[keys];
       book.Storage = item['Total'];
       book.Records = [];
-      await getConnection().manager.save(book);
+      books.push(book)
     }
-    ctx.body = { 'status': true, 'info': data.length + "Books Added!" };
+    await getConnection().manager.save(books);
+    ctx.body = { 'status': true, 'info': books.length + "Books Added!" };
     console.log(data.length + "Books Added!");
   }
   catch (err) {
